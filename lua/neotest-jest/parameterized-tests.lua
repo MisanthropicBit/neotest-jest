@@ -1,6 +1,5 @@
-local lib = require("neotest.lib")
-local util = require("neotest-jest.util")
 local jest_util = require("neotest-jest.jest-util")
+local nio = require("nio")
 
 local M = {}
 
@@ -29,9 +28,7 @@ end
 -- @return table - parsed jest test results
 local function run_jest_test_discovery(file_path)
   local binary = jest_util.getJestCommand(file_path)
-  local command = vim.split(binary, "%s+")
-
-  vim.list_extend(command, {
+  local args = {
     "--no-coverage",
     "--testLocationInResults",
     "--verbose",
@@ -39,15 +36,29 @@ local function run_jest_test_discovery(file_path)
     file_path,
     "-t",
     "@______________PLACEHOLDER______________@",
+  }
+
+  local process, err = nio.process.run({
+    cmd = binary,
+    args = args,
   })
 
-  local result = { lib.process.run(command, { stdout = true }) }
-
-  if not result[2] then
+  if err then
     return nil
   end
 
-  local jest_json_string = result[2].stdout
+  ---@cast process nio.process.Process
+  local jest_json_string, read_err = process.stdout.read()
+
+  if read_err then
+    return nil
+  end
+
+  local code = process.result()
+
+  if code ~= 0 then
+    return nil
+  end
 
   if not jest_json_string or #jest_json_string == 0 then
     return nil
