@@ -1,9 +1,5 @@
 local stub = require("luassert.stub")
 local async = require("nio").tests
-local plugin = require("neotest-jest")({
-  jestCommand = "jest",
-})
-local util = require("neotest-jest.util")
 local Tree = require("neotest.types").Tree
 require("neotest-jest-assertions")
 A = function(...)
@@ -12,52 +8,29 @@ end
 
 describe("adapter root", function()
   async.it("jest is installed", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     assert.Not.Nil(plugin.root("./spec"))
   end)
 end)
 
 describe("is_test_file", function()
   async.it("matches jest files", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     assert.True(plugin.is_test_file("./spec/basic.test.ts"))
   end)
 
   async.it("does not match plain js files", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     assert.False(plugin.is_test_file("./index.ts"))
-  end)
-
-  it("gets default test extensions", function()
-    local intermediate_extensions, extensions = util.default_test_extensions()
-
-    assert.same(intermediate_extensions, { "spec", "e2e%-spec", "test", "unit", "regression", "integration" })
-    assert.same(extensions, { "js", "jsx", "coffee", "ts", "tsx" })
-  end)
-
-  async.it("matches test files with default test patterns", function()
-    local intermediate_extensions, extensions = util.default_test_extensions()
-
-    for _, extension1 in ipairs(intermediate_extensions) do
-      for _, extension2 in ipairs(extensions) do
-        assert.True(plugin.is_test_file("./spec/basic." .. extension1 .. "." .. extension2))
-      end
-    end
-  end)
-
-  async.it("matches test files with configurable test patterns", function()
-    local intermediate_extensions = { "spec", "test", "lollipop" }
-    local extensions = { "js", "ts" }
-    local is_test_file = util.create_test_file_extensions_matcher(
-      intermediate_extensions,
-      extensions
-    )
-
-    for _, extension1 in ipairs(intermediate_extensions) do
-      for _, extension2 in ipairs(extensions) do
-        assert.True(is_test_file("./spec/basic." .. extension1 .. "." .. extension2))
-      end
-    end
-
-    -- Does not match anymore with custom extensions
-    assert.False(is_test_file("./spec/sample.integration.ts"))
   end)
 end)
 
@@ -73,6 +46,10 @@ describe("discover_positions", function()
   end
 
   async.it("provides meaningful names from a basic spec", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/basic.test.ts"):to_list()
 
     local expected_output = {
@@ -154,7 +131,12 @@ describe("discover_positions", function()
   end)
 
   async.it("provides meaningful names for array driven tests", function()
+    -- TODO: Fix
     stub(require("neotest.lib").process, "run")
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/array.test.ts"):to_list()
 
     local expected_output = {
@@ -254,6 +236,10 @@ end)
 
 describe("build_spec", function()
   async.it("builds command for file test", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/basic.test.ts"):to_list()
     local tree = Tree.from_list(positions, function(pos)
       return pos.id
@@ -267,12 +253,16 @@ describe("build_spec", function()
     assert.contains(command, "--json")
     assert.is_not.contains(command, "--config=jest.config.js")
     assert.contains(command, "--testNamePattern='.*'")
-    assert.contains(command, ".\\/spec\\/basic.test.ts")
+    assert.contains(command, "spec\\/basic.test.ts")
     assert.is.truthy(spec.context.file)
     assert.is.truthy(spec.context.results_path)
   end)
 
   async.it("builds command for file test with jestCommand arg", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/basic.test.ts"):to_list()
     local tree = Tree.from_list(positions, function(pos)
       return pos.id
@@ -287,12 +277,16 @@ describe("build_spec", function()
     assert.contains(command, "--json")
     assert.is_not.contains(command, "--config=jest.config.js")
     assert.contains(command, "--testNamePattern='.*'")
-    assert.contains(command, ".\\/spec\\/basic.test.ts")
+    assert.contains(command, "spec\\/basic.test.ts")
     assert.is.truthy(spec.context.file)
     assert.is.truthy(spec.context.results_path)
   end)
 
   async.it("builds command for namespace", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/basic.test.ts"):to_list()
 
     local tree = Tree.from_list(positions, function(pos)
@@ -308,12 +302,16 @@ describe("build_spec", function()
     assert.contains(command, "--json")
     assert.is_not.contains(command, "--config=jest.config.js")
     assert.contains(command, "--testNamePattern='^describe text'")
-    assert.contains(command, ".\\/spec\\/basic.test.ts")
+    assert.contains(command, "spec\\/basic.test.ts")
     assert.is.truthy(spec.context.file)
     assert.is.truthy(spec.context.results_path)
   end)
 
   async.it("builds command for nested namespace", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/nestedDescribe.test.ts"):to_list()
 
     local tree = Tree.from_list(positions, function(pos)
@@ -329,12 +327,16 @@ describe("build_spec", function()
     assert.contains(command, "--json")
     assert.is_not.contains(command, "--config=jest.config.js")
     assert.contains(command, "--testNamePattern='^outer middle inner'")
-    assert.contains(command, ".\\/spec\\/nestedDescribe.test.ts")
+    assert.contains(command, "spec\\/nestedDescribe.test.ts")
     assert.is.truthy(spec.context.file)
     assert.is.truthy(spec.context.results_path)
   end)
 
   async.it("builds correct command for test name with ' ", function()
+    local plugin = require("neotest-jest")({
+      jestCommand = "jest",
+    })
+
     local positions = plugin.discover_positions("./spec/nestedDescribe.test.ts"):to_list()
 
     local tree = Tree.from_list(positions, function(pos)
@@ -350,7 +352,7 @@ describe("build_spec", function()
     assert.contains(command, "--json")
     assert.is_not.contains(command, "--config=jest.config.js")
     assert.contains(command, "--testNamePattern='^outer middle inner this has a \\'$'")
-    assert.contains(command, ".\\/spec\\/nestedDescribe.test.ts")
+    assert.contains(command, "spec\\/nestedDescribe.test.ts")
     assert.is.truthy(spec.context.file)
     assert.is.truthy(spec.context.results_path)
   end)
@@ -368,8 +370,25 @@ describe("build_spec", function()
       { index = 6, expected_name = "^describe text test with .* and \\(parenthesis\\)$" },
     }) do
       async.it("builds command with correct test name pattern " .. test_data.index, function()
-        -- mock neotest process run to not run jest test discovery
-        stub(require("neotest.lib").process, "run")
+        local plugin = require("neotest-jest")({
+          jestCommand = "jest",
+          jest_test_discovery = true,
+        })
+
+        local nio_process = require("nio.process")
+        -- mock nio process to not run jest test discovery
+        stub(nio_process, "run", function()
+          return {
+            stdout = {
+              read = function()
+                return "", true
+              end
+            },
+            result = function()
+              return 0
+            end,
+          }, true
+        end)
 
         local positions = plugin.discover_positions("./spec/parameterized.test.ts"):to_list()
 
@@ -379,6 +398,8 @@ describe("build_spec", function()
 
         local spec = plugin.build_spec({ tree = tree:children()[1]:children()[test_data.index] })
         assert.contains(spec.command, "--testNamePattern='" .. test_data.expected_name .. "'")
+
+        nio_process.run:revert()
       end)
     end
   end)

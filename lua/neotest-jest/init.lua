@@ -235,14 +235,15 @@ function adapter.discover_positions(path)
     build_position = 'require("neotest-jest").build_position',
   })
 
-  local parameterized_tests_positions =
-    parameterized_tests.get_parameterized_tests_positions(positions)
+  if adapter.jest_test_discovery then
+    local parameterized_tests_positions = parameterized_tests.get_parameterized_tests_positions(positions)
 
-  if adapter.jest_test_discovery and #parameterized_tests_positions > 0 then
-    parameterized_tests.enrich_positions_with_parameterized_tests(
-      positions:data().path,
-      parameterized_tests_positions
-    )
+    if #parameterized_tests_positions > 0 then
+      parameterized_tests.enrich_positions_with_parameterized_tests(
+        positions:data().path,
+        parameterized_tests_positions
+      )
+    end
   end
 
   return positions
