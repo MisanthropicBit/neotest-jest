@@ -24,43 +24,35 @@ jobs:
           args: --color always --check .
   unit_tests:
     name: unit tests
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-20.04
-            url: https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz
-          - os: ubuntu-20.04
-            url: https://github.com/neovim/neovim/releases/download/v0.9.0/nvim-linux64.tar.gz
+        neovim_version: ['v0.9.0', 'v0.10.0', 'v0.11.0', 'nightly']
 
     steps:
       - uses: actions/checkout@v3
       - run: date +%F > todays-date
       - name: Restore cache for today's nightly.
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: _neovim
           key: ${{ runner.os }}-x64-${{ hashFiles('todays-date') }}
-
       - name: Prepare dependencies
         run: |
-          test -d _neovim || {
-            mkdir -p _neovim
-            curl -sL ${{ matrix.url }} | tar xzf - --strip-components=1 -C "${PWD}/_neovim"
-          }
           mkdir -p ~/.local/share/nvim/site/pack/vendor/start
           git clone --depth 1 https://github.com/nvim-lua/plenary.nvim.git ~/.local/share/nvim/site/pack/vendor/start/plenary.nvim
           git clone --depth 1 https://github.com/nvim-neotest/neotest.git ~/.local/share/nvim/site/pack/vendor/start/neotest
           git clone --depth 1 https://github.com/nvim-treesitter/nvim-treesitter.git ~/.local/share/nvim/site/pack/vendor/start/nvim-treesitter
           git clone --depth 1 https://github.com/neovim/nvim-lspconfig.git ~/.local/share/nvim/site/pack/vendor/start/nvim-lspconfig
           ln -s $(pwd) ~/.local/share/nvim/site/pack/vendor/start
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
-          nvim --headless -c 'TSInstallSync javascript typescript | quit'
+      - name: Setup neovim
+        uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: ${{ matrix.neovim_version }}
       - name: Run tests
         run: |
-          export PATH="${PWD}/_neovim/bin:${PATH}"
-          export VIM="${PWD}/_neovim/share/nvim/runtime"
           nvim --version
+          nvim --headless -c 'TSInstallSync javascript typescript | quit'
           ./scripts/test
